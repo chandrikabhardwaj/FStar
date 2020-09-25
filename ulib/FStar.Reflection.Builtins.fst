@@ -86,8 +86,8 @@ assume val sigelt_quals     : sigelt -> list qualifier
 assume val set_sigelt_quals : list qualifier -> sigelt -> sigelt
 
 (* Reading the optionstate under which a particular sigelt was typechecked *)
-assume val sigelt_opts : sigelt -> option term
+assume val sigelt_opts : sigelt -> option vconfig
 
 (* Marker to check a sigelt with a particular optionstate *)
 irreducible
-let check_with (o : optionstate) : unit = ()
+let check_with (vcfg : vconfig) : unit = ()
