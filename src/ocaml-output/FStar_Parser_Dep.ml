@@ -1326,6 +1326,10 @@ let (collect_one :
                   collect_term t)
              | FStar_Parser_AST.LetOpen (lid, t) ->
                  (add_to_parsing_data (P_open (true, lid)); collect_term t)
+             | FStar_Parser_AST.LetOpenRecord (rty, r, e) ->
+                 (add_to_parsing_data (P_lid rty);
+                  collect_term r;
+                  collect_term e)
              | FStar_Parser_AST.Bind (uu___3, t1, t2) ->
                  (collect_term t1; collect_term t2)
              | FStar_Parser_AST.Seq (t1, t2) ->

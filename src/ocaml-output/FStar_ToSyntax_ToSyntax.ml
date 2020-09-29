@@ -2905,6 +2905,69 @@ and (desugar_term_maybe_top :
               let uu___2 = FStar_Syntax_DsEnv.expect_typ env1 in
               if uu___2 then desugar_typ_aq else desugar_term_aq in
             uu___1 env1 e
+        | FStar_Parser_AST.LetOpenRecord (rty, r, e) ->
+            let mkrty =
+              let uu___1 =
+                let uu___2 = FStar_Ident.ns_of_lid rty in
+                let uu___3 =
+                  let uu___4 =
+                    let uu___5 =
+                      let uu___6 =
+                        let uu___7 = FStar_Ident.ident_of_lid rty in
+                        FStar_Ident.string_of_id uu___7 in
+                      Prims.op_Hat "Mk" uu___6 in
+                    FStar_Ident.id_of_text uu___5 in
+                  [uu___4] in
+                FStar_List.append uu___2 uu___3 in
+              FStar_Ident.lid_of_ids uu___1 in
+            let mkrty_tm =
+              FStar_Syntax_DsEnv.fail_or env
+                (FStar_Syntax_DsEnv.try_lookup_lid env) mkrty in
+            let fields =
+              let uu___1 =
+                let uu___2 = FStar_Syntax_Subst.compress mkrty_tm in
+                uu___2.FStar_Syntax_Syntax.n in
+              match uu___1 with
+              | FStar_Syntax_Syntax.Tm_fvar fv ->
+                  (match fv.FStar_Syntax_Syntax.fv_qual with
+                   | FStar_Pervasives_Native.Some
+                       (FStar_Syntax_Syntax.Record_ctor (uu___2, fields1)) ->
+                       fields1
+                   | uu___2 ->
+                       let uu___3 =
+                         let uu___4 =
+                           let uu___5 = FStar_Ident.string_of_lid rty in
+                           FStar_Util.format1 "Not a record type: %s" uu___5 in
+                         (FStar_Errors.Error_BadLetOpenRecord, uu___4) in
+                       FStar_Errors.raise_error uu___3
+                         top.FStar_Parser_AST.range)
+              | uu___2 ->
+                  failwith
+                    "tosyntax: LetOpenRecord: try_lookup_lid returned non-fvar?" in
+            let mk_pattern p =
+              FStar_Parser_AST.mk_pattern p r.FStar_Parser_AST.range in
+            let elab =
+              let pat =
+                let uu___1 =
+                  let uu___2 =
+                    let uu___3 =
+                      FStar_List.map
+                        (fun field ->
+                           mk_pattern
+                             (FStar_Parser_AST.PatVar
+                                (field, FStar_Pervasives_Native.None)))
+                        fields in
+                    ((mk_pattern (FStar_Parser_AST.PatName mkrty)), uu___3) in
+                  FStar_Parser_AST.PatApp uu___2 in
+                mk_pattern uu___1 in
+              let branch = (pat, FStar_Pervasives_Native.None, e) in
+              let uu___1 = top in
+              {
+                FStar_Parser_AST.tm = (FStar_Parser_AST.Match (r, [branch]));
+                FStar_Parser_AST.range = (uu___1.FStar_Parser_AST.range);
+                FStar_Parser_AST.level = (uu___1.FStar_Parser_AST.level)
+              } in
+            desugar_term_maybe_top top_level env elab
         | FStar_Parser_AST.Let (qual, lbs, body) ->
             let is_rec = qual = FStar_Parser_AST.Rec in
             let ds_let_rec_or_app uu___1 =
