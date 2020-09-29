@@ -57,6 +57,7 @@ let old_attribute_syntax_warning =
 %token <char> CHAR
 %token <bool> LET
 
+%token AS
 %token FORALL EXISTS ASSUME NEW LOGIC ATTRIBUTES
 %token IRREDUCIBLE UNFOLDABLE INLINE OPAQUE UNFOLD INLINE_FOR_EXTRACTION
 %token NOEXTRACT
@@ -666,8 +667,13 @@ noSeqTerm:
         let branches = focusBranches pbs (rhs2 parseState 1 4) in
         mk_term (Match(e, branches)) (rhs2 parseState 1 4) Expr
       }
+
   | LET OPEN uid=quident IN e=term
       { mk_term (LetOpen(uid, e)) (rhs2 parseState 1 5) Expr }
+
+  | LET OPEN r=term AS rty=qlident IN e=term
+      { mk_term (LetOpenRecord(rty, r, e)) (rhs2 parseState 1 6) Expr }
+
   | attrs=ioption(attribute)
     LET q=letqualifier lb=letbinding lbs=list(attr_letbinding) IN e=term
       {

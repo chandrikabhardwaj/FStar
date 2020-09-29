@@ -1281,6 +1281,37 @@ and desugar_term_maybe_top (top_level:bool) (env:env_t) (top:term) : S.term * an
       let env = Env.push_namespace env lid in
       (if Env.expect_typ env then desugar_typ_aq else desugar_term_aq) env e
 
+    | LetOpenRecord (rty, r, e) ->
+      // Awful hack, turn `ty` into `Mkty`. This has a disadvantage: if the type does not
+      // exists we get an error like 'Identifier not found: [Mkint]'
+      let mkrty = lid_of_ids (ns_of_lid rty @ [id_of_text ("Mk" ^ (string_of_id (ident_of_lid rty)))]) in
+      let mkrty_tm = fail_or env (Env.try_lookup_lid env) mkrty in
+      let fields =
+        match (SS.compress mkrty_tm).n with
+        | Tm_fvar fv ->
+          begin match fv.fv_qual with
+          | Some (Record_ctor (_, fields)) -> fields
+          | _ -> raise_error (Errors.Error_BadLetOpenRecord,
+                              BU.format1 "Not a record type: %s" (string_of_lid rty)) top.range
+          end
+        | _ ->
+          failwith "tosyntax: LetOpenRecord: try_lookup_lid returned non-fvar?"
+      in
+      let mk_pattern p = mk_pattern p r.range in
+      let elab =
+        let pat =
+          mk_pattern (PatApp (mk_pattern (PatName mkrty),
+                              List.map (fun field -> mk_pattern (PatVar (field, None))) fields))
+        in
+        let branch = (pat, None, e) in
+        // GM: It would be nice to ascribe `r` to get a better error if it's
+        // not the proper type, but the record could have type arguments.
+        // Maybe add underscores?
+        (* let r = mk_term (Ascribed (r, _, None)) r.range Expr in *)
+        { top with tm = Match (r, [branch]) }
+      in
+      desugar_term_maybe_top top_level env elab
+
     | Let(qual, lbs, body) ->
       let is_rec = qual = Rec in
       let ds_let_rec_or_app () =

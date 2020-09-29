@@ -1442,6 +1442,9 @@ let pbs =    ( List.rev xs ) in
 | LET OPEN quident IN term
     {let (_1, _2, uid, _4, e) = ($1, (), $3, (), $5) in
       ( mk_term (LetOpen(uid, e)) (rhs2 parseState 1 5) Expr )}
+| LET OPEN quident term IN term
+    {let (_1, _2, rty, r, _5, e) = ($1, (), $3, $4, (), $6) in
+      ( mk_term (LetOpenRecord(rty, r, e)) (rhs2 parseState 1 6) Expr )}
 | LET letqualifier letbinding list_attr_letbinding_ IN term
     {let (_2, q, lb, lbs, _6, e) = ($1, $2, $3, $4, (), $6) in
 let attrs =     ( None ) in
